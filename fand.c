@@ -93,8 +93,8 @@ main(void)
 		int maxtemp = 0;
 		for (int i = 0; i < cpus; i++) {
 			int temp;
-			if (sysctl(temp_mibs[i], (int){ SCTL_TEMP_LEN }, &temp,
-			    &(size_t){ sizeof(cpus) }, NULL, 0) == -1)
+			if (sysctl(temp_mibs[i], (int){ SCTL_TEMP_LEN },
+			    &temp, &(size_t){ sizeof(temp) }, NULL, 0) == -1)
 				err(EXIT_FAILURE, 
 				    "could not get temperature for cpu %d", i);
 
