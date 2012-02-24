@@ -43,6 +43,7 @@ struct fanctl {
  * 7		~4500
  */
 struct fanctl fanctls[] = {
+	{ C2K( 0), 0 },
 	{ C2K(40), 1 },
 	{ C2K(45), 2 },
 	{ C2K(50), 3 },
