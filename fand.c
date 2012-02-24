@@ -116,7 +116,8 @@ main(void)
 
 			if (sysctl(level_mib, SCTL_LEVEL_LEN, NULL, NULL,
 			    &newlevel, sizeof(int)) == -1)
-				err(EXIT_FAILURE, "could not set fan level: %d -> %d",
+				err(EXIT_FAILURE,
+				    "could not set fan level: %d -> %d",
 				    oldlevel, newlevel);
 		}
 
