@@ -76,6 +76,11 @@ main(void)
 		free(mib_rep);
 	}
 
+	int level_mib[SCTL_LEVEL_LEN];
+	if (sysctlnametomib(SCTL_LEVEL, level_mib,
+	    &(size_t){ sizeof(level_mib) }))
+		err(EXIT_FAILURE, "could not find MIB for \"%s\"", SCTL_LEVEL);
+
 	atexit(cleanup);
 	signal(SIGINT, handle_signal);
 	signal(SIGHUP, handle_signal);
@@ -83,11 +88,6 @@ main(void)
 
 	if (sysctlbyname(SCTL_FAN, NULL, NULL, &(int){ 0 }, sizeof(int)) == -1)
 		err(EXIT_FAILURE, "could not take over fan control");
-
-	int level_mib[SCTL_LEVEL_LEN];
-	if (sysctlnametomib(SCTL_LEVEL, level_mib,
-	    &(size_t){ sizeof(level_mib) }))
-		err(EXIT_FAILURE, "could not find MIB for \"%s\"", SCTL_LEVEL);
 
 	int oldlevel = 0;
 	for (;;) {
