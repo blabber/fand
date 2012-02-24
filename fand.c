@@ -6,14 +6,14 @@
  *                                                              Tobias Rehbein
  */
 
+#include <sys/types.h>
+#include <sys/sysctl.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <err.h>
 #include <signal.h>
-
-#include <sys/types.h>
-#include <sys/sysctl.h>
 
 #define SCTL_CPUS	"kern.smp.cpus"
 #define SCTL_FAN	"dev.acpi_ibm.0.fan"
