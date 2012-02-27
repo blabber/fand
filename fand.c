@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <err.h>
 #include <signal.h>
+#include <stdbool.h>
 
 #define SCTL_CPUS	"kern.smp.cpus"
 #define SCTL_FAN	"dev.acpi_ibm.0.fan"
@@ -53,10 +54,26 @@ struct fanctl fanctls[] = {
 
 static void handle_signal(int sig);
 static void cleanup(void);
+static void usage(void);
+
+static bool nflag;
 
 int
-main(void)
+main(int argc, char **argv)
 {
+	int opt;
+	nflag = false;
+	while ((opt = getopt(argc, argv, "n")) != -1) {
+		switch (opt) {
+		case 'n':
+			nflag = true;
+			break;
+		case '?':
+		default:
+			usage();
+		}
+	}
+
 	int cpus;
 	if (sysctlbyname(SCTL_CPUS, &cpus,
 	    &(size_t){ sizeof(cpus) }, NULL, 0) == -1)
@@ -86,8 +103,10 @@ main(void)
 	signal(SIGHUP, handle_signal);
 	signal(SIGTERM, handle_signal);
 
-	if (sysctlbyname(SCTL_FAN, NULL, NULL, &(int){ 0 }, sizeof(int)) == -1)
-		err(EXIT_FAILURE, "could not take over fan control");
+	if (!nflag)
+		if (sysctlbyname(SCTL_FAN, NULL, NULL,
+		    &(int){ 0 }, sizeof(int)) == -1)
+			err(EXIT_FAILURE, "could not take over fan control");
 
 	int oldlevel = 0;
 	for (;;) {
@@ -139,6 +158,16 @@ handle_signal(int sig __unused)
 static void
 cleanup(void)
 {
-	if (sysctlbyname(SCTL_FAN, NULL, NULL, &(int){ 1 }, sizeof(int)) == -1)
-		err(EXIT_FAILURE, "could not hand over fan control");
+	if (!nflag)
+		if (sysctlbyname(SCTL_FAN, NULL, NULL,
+		    &(int){ 1 }, sizeof(int)) == -1)
+			err(EXIT_FAILURE, "could not hand over fan control");
+}
+
+static void
+usage(void)
+{
+	printf("Usage: fand [-n]\n");
+
+	exit(EXIT_FAILURE);
 }
