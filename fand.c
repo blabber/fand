@@ -57,17 +57,20 @@ static void handle_signal(int sig);
 static void cleanup(void);
 static void usage(void);
 
-static bool nflag;
+static bool nflag, vflag;
 
 int
 main(int argc, char **argv)
 {
 	int opt;
-	nflag = false;
-	while ((opt = getopt(argc, argv, "n")) != -1) {
+	nflag = vflag = false;
+	while ((opt = getopt(argc, argv, "nv")) != -1) {
 		switch (opt) {
 		case 'n':
 			nflag = true;
+			break;
+		case 'v':
+			vflag = true;
 			break;
 		case '?':
 		default:
@@ -104,10 +107,15 @@ main(int argc, char **argv)
 	signal(SIGHUP, handle_signal);
 	signal(SIGTERM, handle_signal);
 
-	if (!nflag)
+	if (!nflag) {
 		if (sysctlbyname(SCTL_FAN, NULL, NULL,
 		    &(int){ 0 }, sizeof(int)) == -1)
 			err(EXIT_FAILURE, "could not take over fan control");
+
+		if (vflag)
+			fprintf(stderr, "%s: took over fan control\n",
+			    getprogname());
+	}
 
 	int oldlevel = 0;
 	for (;;) {
@@ -131,8 +139,10 @@ main(int argc, char **argv)
 		}
 
 		if (oldlevel != newlevel) {
-			fprintf(stderr, "DEBUG: temp %d, %d -> %d\n",
-			    K2C(maxtemp), oldlevel, newlevel);
+			if (vflag)
+				fprintf(stderr, "%s: temp %d, %d -> %d\n",
+				    getprogname(), K2C(maxtemp),
+				    oldlevel, newlevel);
 
 			if (sysctl(level_mib, SCTL_LEVEL_LEN, NULL, NULL,
 			    &newlevel, sizeof(int)) == -1)
@@ -158,10 +168,15 @@ handle_signal(int sig __unused)
 static void
 cleanup(void)
 {
-	if (!nflag)
+	if (!nflag) {
 		if (sysctlbyname(SCTL_FAN, NULL, NULL,
 		    &(int){ 1 }, sizeof(int)) == -1)
 			err(EXIT_FAILURE, "could not hand over fan control");
+
+		if (vflag)
+			fprintf(stderr, "%s: handed over fan control\n",
+			    getprogname());
+	}
 }
 
 static void
