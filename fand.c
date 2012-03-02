@@ -27,6 +27,7 @@
 
 #define C2K(c)		(((c) * 10) + 2732 - 5)
 #define K2C(k)		(((k) - 2732 + 5) / 10)
+#define ASIZE(a)	(sizeof(a)/sizeof(a[0]))
 
 struct fanctl {
 	int threshold;
@@ -123,8 +124,7 @@ main(int argc, char **argv)
 		}
 
 		int newlevel = 0;
-		long int fanctls_size = sizeof(fanctls)/sizeof(struct fanctl);
-		for (int i = fanctls_size - 1; i >= 0; i--) {
+		for (int i = ASIZE(fanctls) - 1; i >= 0; i--) {
 			newlevel = fanctls[i].level;
 			if (maxtemp > fanctls[i].threshold)
 				break;
