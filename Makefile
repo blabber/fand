@@ -1,5 +1,7 @@
 PROG=		fand
 
+LDADD=		-lutil
+
 WARNS?=		6
 WFORMAT?=	1
 CSTD=		c99

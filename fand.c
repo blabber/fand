@@ -8,13 +8,19 @@
 
 #include <sys/types.h>
 #include <sys/sysctl.h>
+#include <sys/param.h>
 
+#include <err.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <err.h>
+#include <errno.h>
 #include <signal.h>
 #include <stdbool.h>
+#include <stdint.h>
+#include <string.h>
+#include <libutil.h>
 
 #define SCTL_CPUS	"kern.smp.cpus"
 #define SCTL_FAN	"dev.acpi_ibm.0.fan"
@@ -57,14 +63,17 @@ static void handle_signal(int sig);
 static void cleanup(void);
 static void usage(void);
 
-static bool nflag, vflag;
+static bool nflag, vflag, dflag;
+static char *pidfile;
+struct pidfh *pfh;
 
 int
 main(int argc, char **argv)
 {
 	int opt;
-	nflag = vflag = false;
-	while ((opt = getopt(argc, argv, "nv")) != -1) {
+	pidfile = NULL;
+	nflag = vflag = dflag = false;
+	while ((opt = getopt(argc, argv, "nvdp:")) != -1) {
 		switch (opt) {
 		case 'n':
 			nflag = true;
@@ -72,10 +81,44 @@ main(int argc, char **argv)
 		case 'v':
 			vflag = true;
 			break;
-		case '?':
+		case 'd':
+			dflag = true;
+			break;
+		case 'p':
+			pidfile = strdup(optarg);
+			break;
+		case 'h':
 		default:
 			usage();
 		}
+	}
+
+	if (!dflag) {
+		if (pidfile != NULL) {
+			pid_t other;
+			pfh = pidfile_open(pidfile, 0600, &other);
+			if (pfh == NULL) {
+				if (errno == EEXIST) {
+					fprintf(stderr,
+					    "%s: daemon already running, pid: "
+					    "%jd\n", getprogname(),
+					    (intmax_t)other);
+					exit(EXIT_FAILURE);
+				}
+				fprintf(stderr,
+				    "%s: cannot open or create pidfile:%s\n",
+				    getprogname(), strerror(errno));
+			}
+		}
+
+		if (daemon(0, 0) == -1) {
+			fprintf(stderr, "%s: cannot daemonize: %s\n",
+			    getprogname(), strerror(errno));
+			exit(EXIT_FAILURE);
+		}
+
+		if (pidfile != NULL)
+			pidfile_write(pfh);
 	}
 
 	int cpus;
@@ -169,20 +212,26 @@ static void
 cleanup(void)
 {
 	if (!nflag) {
-		if (sysctlbyname(SCTL_FAN, NULL, NULL,
-		    &(int){ 1 }, sizeof(int)) == -1)
+		if (sysctlbyname(SCTL_FAN, NULL, NULL, &(int){ 1 },
+		    sizeof(int)) == -1)
 			err(EXIT_FAILURE, "could not hand over fan control");
 
 		if (vflag)
 			fprintf(stderr, "%s: handed over fan control\n",
 			    getprogname());
 	}
+
+	if (!dflag && pidfile != NULL)
+		pidfile_remove(pfh);
+
+	free(pidfile);
 }
 
 static void
 usage(void)
 {
-	printf("Usage: fand [-n]\n");
+	fprintf(stderr, "Usage: %s [-vnd] [-p pidfile]\n", getprogname());
+	fprintf(stderr, "       %s -h\n", getprogname());
 
 	exit(EXIT_FAILURE);
 }

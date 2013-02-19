@@ -24,5 +24,4 @@ And to be honest I was curious how to do this.
 TODO
 ----
 
- * The tool should run as a daemon.
  * The thresholds for the fan levels have to be fine tuned.
