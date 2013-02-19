@@ -24,4 +24,5 @@ And to be honest I was curious how to do this.
 TODO
 ----
 
+ * Logging
  * The thresholds for the fan levels have to be fine tuned.
